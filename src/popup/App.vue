@@ -8,6 +8,7 @@ import {
   SIZE_PRESETS,
   FILENAME_PATTERNS,
   WIFI_SECURITY,
+  FEEDBACK_URLS,
 } from './constants.js'
 import AppHeader from './components/AppHeader.vue'
 import SectionCard from './components/SectionCard.vue'
@@ -274,16 +275,22 @@ const {
             </button>
           </div>
         </SectionCard>
-
-        <p class="privacy">Generation runs locally in your browser — payload is not sent to a server.</p>
-
-        <footer class="signature" aria-label="Author">
-          <span class="signature__text">Built with care by</span>
-          <a class="signature__link" href="https://github.com/zfhassaan" target="_blank" rel="noopener noreferrer">
-            zfhassaan
-          </a>
-        </footer>
       </div>
+
+      <p class="privacy">Generation runs locally in your browser — payload is not sent to a server.</p>
+
+      <footer class="signature" aria-label="Author and feedback">
+        <span class="signature__text">Built with care by</span>
+        <a class="signature__link" href="https://github.com/zfhassaan" target="_blank" rel="noopener noreferrer">
+          zfhassaan
+        </a>
+        <span class="signature__sep" aria-hidden="true">·</span>
+        <a class="signature__link signature__link--sub" :href="FEEDBACK_URLS.reportIssue" target="_blank"
+          rel="noopener noreferrer">Report</a>
+        <span class="signature__sep" aria-hidden="true">·</span>
+        <a class="signature__link signature__link--sub" :href="FEEDBACK_URLS.featureRequest" target="_blank"
+          rel="noopener noreferrer">Feature</a>
+      </footer>
     </main>
 
     <Teleport to="body">
@@ -312,6 +319,31 @@ const {
                 <code class="code">chrome://extensions/shortcuts</code>, then open this popup and use
                 <strong>Use tab URL</strong> on the Create tab.
               </p>
+            </section>
+
+            <section class="info-block">
+              <h3 class="info-block__title">Feedback</h3>
+              <p class="info-block__text info-block__text--tight">
+                Open GitHub to report bugs or suggest improvements.
+              </p>
+              <div class="info-feedback">
+                <a
+                  class="info-feedback__btn"
+                  :href="FEEDBACK_URLS.reportIssue"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Report an issue
+                </a>
+                <a
+                  class="info-feedback__btn info-feedback__btn--primary"
+                  :href="FEEDBACK_URLS.featureRequest"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Request a feature
+                </a>
+              </div>
             </section>
 
             <section class="info-block">
@@ -496,6 +528,58 @@ const {
   font-size: 0.8rem;
   line-height: 1.5;
   color: var(--bc-fg);
+}
+
+.info-block__text--tight {
+  margin-bottom: 8px;
+}
+
+.info-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.info-feedback__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: var(--bc-radius-md);
+  border: 1px solid var(--bc-border);
+  background: var(--bc-panel);
+  color: var(--bc-fg);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.info-feedback__btn:hover {
+  border-color: var(--bc-accent);
+  background: var(--bc-accent-soft);
+}
+
+.info-feedback__btn--primary {
+  border-color: transparent;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+}
+
+.info-feedback__btn--primary:hover {
+  filter: brightness(1.05);
+}
+
+.info-feedback__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--bc-focus);
 }
 
 .info-link {
@@ -1003,5 +1087,14 @@ const {
   outline: none;
   border-radius: 4px;
   box-shadow: var(--bc-focus);
+}
+
+.signature__sep {
+  opacity: 0.5;
+  user-select: none;
+}
+
+.signature__link--sub {
+  font-weight: 600;
 }
 </style>

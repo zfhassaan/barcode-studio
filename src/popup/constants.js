@@ -22,6 +22,14 @@ export const STORAGE = {
   filenamePattern: 'barcodeFilenamePattern',
 }
 
+/** GitHub “New issue” URLs — point at your public repo (edit owner/repo if needed). */
+export const FEEDBACK_URLS = {
+  reportIssue:
+    'https://github.com/zfhassaan/barcode-generator-extension/issues/new?labels=bug',
+  featureRequest:
+    'https://github.com/zfhassaan/barcode-generator-extension/issues/new?labels=enhancement',
+}
+
 export const FILENAME_PATTERNS = [
   { value: 'default', label: 'Symbology + name' },
   { value: 'dated', label: 'Symbology + date + name' },
