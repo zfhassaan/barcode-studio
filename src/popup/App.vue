@@ -45,14 +45,8 @@ const {
     <main class="shell__main">
       <SectionCard title="Content" description="URLs, SKUs, GTINs, or any text the symbology allows.">
         <label class="u-label" for="bc-text">Payload</label>
-        <textarea
-          id="bc-text"
-          v-model="text"
-          class="u-textarea"
-          rows="3"
-          spellcheck="false"
-          placeholder="Paste or type your data…"
-        />
+        <textarea id="bc-text" v-model="text" class="u-textarea" rows="3" spellcheck="false"
+          placeholder="Paste or type your data…" />
 
         <div v-if="recent.length" class="recent">
           <div class="recent__head">
@@ -60,14 +54,7 @@ const {
             <button type="button" class="recent__clear" @click="clearRecent">Clear</button>
           </div>
           <div class="recent__chips">
-            <button
-              v-for="(r, i) in recent"
-              :key="i + r"
-              type="button"
-              class="chip"
-              :title="r"
-              @click="pickRecent(r)"
-            >
+            <button v-for="(r, i) in recent" :key="i + r" type="button" class="chip" :title="r" @click="pickRecent(r)">
               {{ r.length > 30 ? `${r.slice(0, 30)}…` : r }}
             </button>
           </div>
@@ -77,20 +64,15 @@ const {
       <SectionCard title="Symbology" description="Required. Pick QR or a linear standard.">
         <label class="u-label" for="bc-format">Format <abbr class="req" title="required">*</abbr></label>
         <div class="u-select-wrap">
-          <select
-            id="bc-format"
-            v-model="format"
-            class="u-select"
-            required
-            aria-required="true"
-          >
+          <select id="bc-format" v-model="format" class="u-select" required aria-required="true">
             <option disabled value="">Choose format…</option>
             <option v-for="f in FORMATS" :key="f.value" :value="f.value">{{ f.label }}</option>
           </select>
         </div>
       </SectionCard>
 
-      <SectionCard v-show="format === 'qrcode'" title="QR options" description="Error recovery, colors, and output size.">
+      <SectionCard v-show="format === 'qrcode'" title="QR options"
+        description="Error recovery, colors, and output size.">
         <label class="u-label" for="bc-ec">Error correction</label>
         <div class="u-select-wrap">
           <select id="bc-ec" v-model="qrEcLevel" class="u-select">
@@ -120,11 +102,8 @@ const {
         </div>
       </SectionCard>
 
-      <SectionCard
-        v-show="format && format !== 'qrcode'"
-        title="Linear barcode"
-        description="Padding around the bars (pixels)."
-      >
+      <SectionCard v-show="format && format !== 'qrcode'" title="Linear barcode"
+        description="Padding around the bars (pixels).">
         <div class="u-row">
           <label class="u-label u-label--inline" for="bc-lm">Quiet margin</label>
           <span class="u-val">{{ linearMargin }}px</span>
@@ -137,16 +116,10 @@ const {
       </p>
 
       <SectionCard title="Preview" :dense="true">
-        <div
-          class="preview"
-          :class="format === 'qrcode' ? 'preview--qr' : 'preview--barcode'"
-          :style="format === 'qrcode' ? { width: `${presetPx}px`, height: `${presetPx}px` } : undefined"
-        >
-          <canvas
-            ref="canvasRef"
-            class="preview__canvas"
-            :style="format === 'qrcode' ? { width: `${presetPx}px`, height: `${presetPx}px` } : undefined"
-          />
+        <div class="preview" :class="format === 'qrcode' ? 'preview--qr' : 'preview--barcode'"
+          :style="format === 'qrcode' ? { width: `${presetPx}px`, height: `${presetPx}px` } : undefined">
+          <canvas ref="canvasRef" class="preview__canvas"
+            :style="format === 'qrcode' ? { width: `${presetPx}px`, height: `${presetPx}px` } : undefined" />
         </div>
         <p v-if="error && text.trim() && format" class="err" role="alert">{{ error }}</p>
       </SectionCard>
@@ -171,13 +144,7 @@ const {
 
       <SectionCard title="Batch export" description="One value per line · uses symbology &amp; file type above." dense>
         <label class="u-label" for="batch">Lines</label>
-        <textarea
-          id="batch"
-          v-model="batchText"
-          class="u-textarea"
-          rows="3"
-          placeholder="Line 1&#10;Line 2&#10;…"
-        />
+        <textarea id="batch" v-model="batchText" class="u-textarea" rows="3" placeholder="Line 1&#10;Line 2&#10;…" />
         <div class="batch-actions">
           <label class="btn btn--ghost btn--file">
             Import .txt / .csv
@@ -188,6 +155,13 @@ const {
           </button>
         </div>
       </SectionCard>
+
+      <footer class="signature" aria-label="Author">
+        <span class="signature__text">Built with ❤️ by</span>
+        <a class="signature__link" href="https://github.com/zfhassaan" target="_blank" rel="noopener noreferrer">
+          zfhassaan
+        </a>
+      </footer>
     </main>
   </div>
 </template>
@@ -502,6 +476,39 @@ const {
 
 .btn:focus-visible {
   outline: none;
+  box-shadow: var(--bc-focus);
+}
+
+.signature {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 4px 4px;
+  margin-top: 4px;
+  border-top: 1px solid var(--bc-border);
+  font-size: 0.72rem;
+  color: var(--bc-muted);
+}
+
+.signature__text {
+  font-weight: 500;
+}
+
+.signature__link {
+  font-weight: 700;
+  color: var(--bc-accent-text);
+  text-decoration: none;
+}
+
+.signature__link:hover {
+  text-decoration: underline;
+}
+
+.signature__link:focus-visible {
+  outline: none;
+  border-radius: 4px;
   box-shadow: var(--bc-focus);
 }
 </style>
