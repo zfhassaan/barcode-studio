@@ -38,7 +38,11 @@ defineEmits(['update:theme', 'open-info'])
             />
           </svg>
         </button>
-        <ThemeToggle :model-value="theme" @update:model-value="$emit('update:theme', $event)" />
+        <ThemeToggle
+          class="top__theme"
+          :model-value="theme"
+          @update:model-value="$emit('update:theme', $event)"
+        />
       </div>
     </div>
   </header>
@@ -51,10 +55,10 @@ defineEmits(['update:theme', 'open-info'])
 
 .top__row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .top__brand {
@@ -62,6 +66,7 @@ defineEmits(['update:theme', 'open-info'])
   align-items: center;
   gap: 12px;
   min-width: 0;
+  flex: 1;
 }
 
 .top__mark {
@@ -89,7 +94,7 @@ defineEmits(['update:theme', 'open-info'])
 
 .top__title {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.2;
@@ -104,10 +109,15 @@ defineEmits(['update:theme', 'open-info'])
 }
 
 .top__actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
+}
+
+.top__theme {
+  min-width: 0;
 }
 
 .top__icon-btn {
