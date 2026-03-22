@@ -84,42 +84,21 @@ const {
     <AppHeader v-model:theme="theme" @open-info="infoOpen = true" />
 
     <nav class="tab-bar" role="tablist" aria-label="Sections">
-      <button
-        id="tab-create"
-        type="button"
-        class="tab-bar__btn"
-        role="tab"
-        :aria-selected="activeTab === 'create'"
-        :tabindex="activeTab === 'create' ? 0 : -1"
-        aria-controls="panel-create"
-        @click="activeTab = 'create'"
-      >
+      <button id="tab-create" type="button" class="tab-bar__btn" role="tab" :aria-selected="activeTab === 'create'"
+        :tabindex="activeTab === 'create' ? 0 : -1" aria-controls="panel-create" @click="activeTab = 'create'">
         <span class="tab-bar__label">Create</span>
         <span class="tab-bar__hint">Format &amp; preview</span>
       </button>
-      <button
-        id="tab-export"
-        type="button"
-        class="tab-bar__btn"
-        role="tab"
-        :aria-selected="activeTab === 'export'"
-        :tabindex="activeTab === 'export' ? 0 : -1"
-        aria-controls="panel-export"
-        @click="activeTab = 'export'"
-      >
+      <button id="tab-export" type="button" class="tab-bar__btn" role="tab" :aria-selected="activeTab === 'export'"
+        :tabindex="activeTab === 'export' ? 0 : -1" aria-controls="panel-export" @click="activeTab = 'export'">
         <span class="tab-bar__label">Export</span>
         <span class="tab-bar__hint">Save &amp; batch</span>
       </button>
     </nav>
 
     <main class="shell__main">
-      <div
-        v-show="activeTab === 'create'"
-        id="panel-create"
-        class="tab-panel"
-        role="tabpanel"
-        aria-labelledby="tab-create"
-      >
+      <div v-show="activeTab === 'create'" id="panel-create" class="tab-panel" role="tabpanel"
+        aria-labelledby="tab-create">
         <SectionCard title="1 · Symbology" description="Choose QR or a linear barcode standard first.">
           <label class="u-label" for="bc-format">Format <abbr class="req" title="required">*</abbr></label>
           <div class="u-select-wrap">
@@ -140,34 +119,20 @@ const {
           <p class="hint hint--tight">More tips and shortcuts are under the info button in the header.</p>
 
           <div v-if="format === 'qrcode'" class="payload-seg" role="group" aria-label="QR payload type">
-            <button
-              type="button"
-              class="payload-seg__btn"
-              :class="{ 'payload-seg__btn--on': payloadMode === 'plain' }"
-              @click="payloadMode = 'plain'"
-            >
+            <button type="button" class="payload-seg__btn" :class="{ 'payload-seg__btn--on': payloadMode === 'plain' }"
+              @click="payloadMode = 'plain'">
               Plain text
             </button>
-            <button
-              type="button"
-              class="payload-seg__btn"
-              :class="{ 'payload-seg__btn--on': payloadMode === 'wifi' }"
-              @click="payloadMode = 'wifi'"
-            >
+            <button type="button" class="payload-seg__btn" :class="{ 'payload-seg__btn--on': payloadMode === 'wifi' }"
+              @click="payloadMode = 'wifi'">
               Wi‑Fi
             </button>
           </div>
 
           <template v-if="format !== 'qrcode' || payloadMode === 'plain'">
             <label class="u-label" for="bc-text">Payload</label>
-            <textarea
-              id="bc-text"
-              v-model="text"
-              class="u-textarea"
-              rows="3"
-              spellcheck="false"
-              placeholder="Paste or type your data…"
-            />
+            <textarea id="bc-text" v-model="text" class="u-textarea" rows="3" spellcheck="false"
+              placeholder="Paste or type your data…" />
           </template>
 
           <template v-else>
@@ -181,14 +146,8 @@ const {
               </select>
             </div>
             <label class="u-label" for="wf-pass">Password</label>
-            <input
-              id="wf-pass"
-              v-model="wifiPassword"
-              class="u-input"
-              type="password"
-              autocomplete="off"
-              :disabled="wifiSecurity === 'nopass'"
-            />
+            <input id="wf-pass" v-model="wifiPassword" class="u-input" type="password" autocomplete="off"
+              :disabled="wifiSecurity === 'nopass'" />
             <label class="u-check">
               <input v-model="wifiHidden" type="checkbox" />
               Hidden network
@@ -201,18 +160,16 @@ const {
               <button type="button" class="recent__clear" @click="clearRecent">Clear</button>
             </div>
             <div class="recent__chips">
-              <button v-for="(r, i) in recent" :key="i + r" type="button" class="chip" :title="r" @click="pickRecent(r)">
+              <button v-for="(r, i) in recent" :key="i + r" type="button" class="chip" :title="r"
+                @click="pickRecent(r)">
                 {{ r.length > 30 ? `${r.slice(0, 30)}…` : r }}
               </button>
             </div>
           </div>
         </SectionCard>
 
-        <SectionCard
-          v-show="format === 'qrcode'"
-          title="3 · QR options"
-          description="Error correction, quiet zone, colors, and export size."
-        >
+        <SectionCard v-show="format === 'qrcode'" title="3 · QR options"
+          description="Error correction, quiet zone, colors, and export size.">
           <label class="u-label" for="bc-ec">Error correction</label>
           <div class="u-select-wrap">
             <select id="bc-ec" v-model="qrEcLevel" class="u-select">
@@ -243,11 +200,8 @@ const {
           </div>
         </SectionCard>
 
-        <SectionCard
-          v-show="format && format !== 'qrcode'"
-          title="3 · Linear options"
-          description="Quiet zone and whether to show digits under the bars."
-        >
+        <SectionCard v-show="format && format !== 'qrcode'" title="3 · Linear options"
+          description="Quiet zone and whether to show digits under the bars.">
           <div class="u-row">
             <label class="u-label u-label--inline" for="bc-lm">Quiet margin</label>
             <span class="u-val">{{ linearMargin }}px</span>
@@ -277,13 +231,8 @@ const {
         </SectionCard>
       </div>
 
-      <div
-        v-show="activeTab === 'export'"
-        id="panel-export"
-        class="tab-panel"
-        role="tabpanel"
-        aria-labelledby="tab-export"
-      >
+      <div v-show="activeTab === 'export'" id="panel-export" class="tab-panel" role="tabpanel"
+        aria-labelledby="tab-export">
         <SectionCard title="Export" description="Pick file type and name, then copy or download.">
           <label class="u-label" for="bc-download">File type</label>
           <div class="u-select-wrap">
@@ -311,7 +260,8 @@ const {
           <p v-if="copyStatus" class="toast">{{ copyStatus }}</p>
         </SectionCard>
 
-        <SectionCard title="Batch export" description="One value per line — uses the same format and file type as above." dense>
+        <SectionCard title="Batch export"
+          description="One value per line — uses the same format and file type as above." dense>
           <label class="u-label" for="batch">Lines</label>
           <textarea id="batch" v-model="batchText" class="u-textarea" rows="3" placeholder="Line 1&#10;Line 2&#10;…" />
           <div class="batch-actions">
@@ -337,28 +287,11 @@ const {
     </main>
 
     <Teleport to="body">
-      <div
-        v-if="infoOpen"
-        class="info-overlay"
-        role="presentation"
-        @click.self="closeInfo"
-      >
-        <div
-          class="info-dialog"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="info-title"
-          tabindex="-1"
-        >
+      <div v-if="infoOpen" class="info-overlay" role="presentation" @click.self="closeInfo">
+        <div class="info-dialog" role="dialog" aria-modal="true" aria-labelledby="info-title" tabindex="-1">
           <div class="info-dialog__head">
             <h2 id="info-title" class="info-dialog__title">About</h2>
-            <button
-              ref="infoCloseRef"
-              type="button"
-              class="info-dialog__close"
-              aria-label="Close"
-              @click="closeInfo"
-            >
+            <button ref="infoCloseRef" type="button" class="info-dialog__close" aria-label="Close" @click="closeInfo">
               <span aria-hidden="true">×</span>
             </button>
           </div>
@@ -404,7 +337,7 @@ const {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   padding: 0 18px 12px;
-  margin-top: -4px;
+  margin-top: 10px;
 }
 
 .tab-bar__btn {
