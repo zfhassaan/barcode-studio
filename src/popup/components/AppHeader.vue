@@ -5,7 +5,7 @@ defineProps({
   theme: { type: String, required: true },
 })
 
-defineEmits(['update:theme'])
+defineEmits(['update:theme', 'open-info'])
 </script>
 
 <template>
@@ -20,7 +20,26 @@ defineEmits(['update:theme'])
           <p class="top__tag">Symbology · Export · Batch</p>
         </div>
       </div>
-      <ThemeToggle :model-value="theme" @update:model-value="$emit('update:theme', $event)" />
+      <div class="top__actions">
+        <button
+          type="button"
+          class="top__icon-btn"
+          aria-label="About and tips"
+          title="About and tips"
+          @click="$emit('open-info')"
+        >
+          <svg class="top__icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+            <circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.75" />
+            <path
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              d="M12 10.5V17M12 7.5h.01"
+            />
+          </svg>
+        </button>
+        <ThemeToggle :model-value="theme" @update:model-value="$emit('update:theme', $event)" />
+      </div>
     </div>
   </header>
 </template>
@@ -82,5 +101,45 @@ defineEmits(['update:theme'])
   font-size: 0.75rem;
   color: var(--bc-muted);
   font-weight: 500;
+}
+
+.top__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.top__icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius-md);
+  background: var(--bc-elevated);
+  color: var(--bc-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.top__icon-btn:hover {
+  color: var(--bc-accent-text);
+  border-color: var(--bc-accent);
+  background: var(--bc-accent-soft);
+}
+
+.top__icon-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--bc-focus);
+}
+
+.top__icon {
+  display: block;
 }
 </style>

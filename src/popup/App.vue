@@ -1,4 +1,5 @@
 <script setup>
+import { ref, watch, onUnmounted, nextTick } from 'vue'
 import { useBarcodeGenerator } from './composables/useBarcodeGenerator.js'
 import {
   FORMATS,
@@ -10,6 +11,32 @@ import {
 } from './constants.js'
 import AppHeader from './components/AppHeader.vue'
 import SectionCard from './components/SectionCard.vue'
+
+const activeTab = ref('create')
+const infoOpen = ref(false)
+const infoCloseRef = ref(null)
+
+function closeInfo() {
+  infoOpen.value = false
+}
+
+function onInfoKeydown(e) {
+  if (e.key === 'Escape') closeInfo()
+}
+
+watch(infoOpen, async (open) => {
+  if (open) {
+    document.addEventListener('keydown', onInfoKeydown)
+    await nextTick()
+    infoCloseRef.value?.focus()
+  } else {
+    document.removeEventListener('keydown', onInfoKeydown)
+  }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', onInfoKeydown)
+})
 
 const {
   text,
@@ -54,213 +81,517 @@ const {
 <template>
   <div class="shell" :data-theme="theme">
     <div class="shell__accent" aria-hidden="true" />
-    <AppHeader v-model:theme="theme" />
+    <AppHeader v-model:theme="theme" @open-info="infoOpen = true" />
+
+    <nav class="tab-bar" role="tablist" aria-label="Sections">
+      <button
+        id="tab-create"
+        type="button"
+        class="tab-bar__btn"
+        role="tab"
+        :aria-selected="activeTab === 'create'"
+        :tabindex="activeTab === 'create' ? 0 : -1"
+        aria-controls="panel-create"
+        @click="activeTab = 'create'"
+      >
+        <span class="tab-bar__label">Create</span>
+        <span class="tab-bar__hint">Format &amp; preview</span>
+      </button>
+      <button
+        id="tab-export"
+        type="button"
+        class="tab-bar__btn"
+        role="tab"
+        :aria-selected="activeTab === 'export'"
+        :tabindex="activeTab === 'export' ? 0 : -1"
+        aria-controls="panel-export"
+        @click="activeTab = 'export'"
+      >
+        <span class="tab-bar__label">Export</span>
+        <span class="tab-bar__hint">Save &amp; batch</span>
+      </button>
+    </nav>
 
     <main class="shell__main">
-      <SectionCard title="Content" description="URLs, SKUs, GTINs, or any text the symbology allows.">
-        <div class="toolbar-row">
-          <button type="button" class="btn btn--ghost btn--sm" @click="fillCurrentTabUrl">
-            Use tab URL
-          </button>
-          <button type="button" class="btn btn--ghost btn--sm" @click="resetFields">Reset</button>
-        </div>
-        <p class="hint hint--tight">
-          Optional: assign shortcut to “Queue current tab URL” in
-          <code class="code">chrome://extensions/shortcuts</code>
-        </p>
-
-        <div v-if="format === 'qrcode'" class="payload-seg" role="group" aria-label="QR payload type">
-          <button
-            type="button"
-            class="payload-seg__btn"
-            :class="{ 'payload-seg__btn--on': payloadMode === 'plain' }"
-            @click="payloadMode = 'plain'"
-          >
-            Plain text
-          </button>
-          <button
-            type="button"
-            class="payload-seg__btn"
-            :class="{ 'payload-seg__btn--on': payloadMode === 'wifi' }"
-            @click="payloadMode = 'wifi'"
-          >
-            Wi‑Fi
-          </button>
-        </div>
-
-        <template v-if="format !== 'qrcode' || payloadMode === 'plain'">
-          <label class="u-label" for="bc-text">Payload</label>
-          <textarea
-            id="bc-text"
-            v-model="text"
-            class="u-textarea"
-            rows="3"
-            spellcheck="false"
-            placeholder="Paste or type your data…"
-          />
-        </template>
-
-        <template v-else>
-          <p class="u-label">Wi‑Fi QR (payload is generated)</p>
-          <label class="u-label" for="wf-ssid">Network name (SSID)</label>
-          <input id="wf-ssid" v-model="wifiSsid" class="u-input" type="text" autocomplete="off" />
-          <label class="u-label" for="wf-sec">Security</label>
+      <div
+        v-show="activeTab === 'create'"
+        id="panel-create"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tab-create"
+      >
+        <SectionCard title="1 · Symbology" description="Choose QR or a linear barcode standard first.">
+          <label class="u-label" for="bc-format">Format <abbr class="req" title="required">*</abbr></label>
           <div class="u-select-wrap">
-            <select id="wf-sec" v-model="wifiSecurity" class="u-select">
-              <option v-for="w in WIFI_SECURITY" :key="w.value" :value="w.value">{{ w.label }}</option>
+            <select id="bc-format" v-model="format" class="u-select" required aria-required="true">
+              <option disabled value="">Choose format…</option>
+              <option v-for="f in FORMATS" :key="f.value" :value="f.value">{{ f.label }}</option>
             </select>
           </div>
-          <label class="u-label" for="wf-pass">Password</label>
-          <input
-            id="wf-pass"
-            v-model="wifiPassword"
-            class="u-input"
-            type="password"
-            autocomplete="off"
-            :disabled="wifiSecurity === 'nopass'"
-          />
-          <label class="u-check">
-            <input v-model="wifiHidden" type="checkbox" />
-            Hidden network
-          </label>
-        </template>
+        </SectionCard>
 
-        <div v-if="recent.length" class="recent">
-          <div class="recent__head">
-            <span class="recent__label">Recent</span>
-            <button type="button" class="recent__clear" @click="clearRecent">Clear</button>
+        <SectionCard title="2 · Content" description="What to encode — text, URL, product ID, or Wi‑Fi for QR.">
+          <div class="toolbar-row">
+            <button type="button" class="btn btn--ghost btn--sm" @click="fillCurrentTabUrl">
+              Use tab URL
+            </button>
+            <button type="button" class="btn btn--ghost btn--sm" @click="resetFields">Reset all</button>
           </div>
-          <div class="recent__chips">
-            <button v-for="(r, i) in recent" :key="i + r" type="button" class="chip" :title="r" @click="pickRecent(r)">
-              {{ r.length > 30 ? `${r.slice(0, 30)}…` : r }}
+          <p class="hint hint--tight">More tips and shortcuts are under the info button in the header.</p>
+
+          <div v-if="format === 'qrcode'" class="payload-seg" role="group" aria-label="QR payload type">
+            <button
+              type="button"
+              class="payload-seg__btn"
+              :class="{ 'payload-seg__btn--on': payloadMode === 'plain' }"
+              @click="payloadMode = 'plain'"
+            >
+              Plain text
+            </button>
+            <button
+              type="button"
+              class="payload-seg__btn"
+              :class="{ 'payload-seg__btn--on': payloadMode === 'wifi' }"
+              @click="payloadMode = 'wifi'"
+            >
+              Wi‑Fi
             </button>
           </div>
-        </div>
-      </SectionCard>
 
-      <SectionCard title="Symbology" description="Required. Pick QR or a linear standard.">
-        <label class="u-label" for="bc-format">Format <abbr class="req" title="required">*</abbr></label>
-        <div class="u-select-wrap">
-          <select id="bc-format" v-model="format" class="u-select" required aria-required="true">
-            <option disabled value="">Choose format…</option>
-            <option v-for="f in FORMATS" :key="f.value" :value="f.value">{{ f.label }}</option>
-          </select>
-        </div>
-      </SectionCard>
+          <template v-if="format !== 'qrcode' || payloadMode === 'plain'">
+            <label class="u-label" for="bc-text">Payload</label>
+            <textarea
+              id="bc-text"
+              v-model="text"
+              class="u-textarea"
+              rows="3"
+              spellcheck="false"
+              placeholder="Paste or type your data…"
+            />
+          </template>
 
-      <SectionCard v-show="format === 'qrcode'" title="QR options"
-        description="Error recovery, colors, and output size.">
-        <label class="u-label" for="bc-ec">Error correction</label>
-        <div class="u-select-wrap">
-          <select id="bc-ec" v-model="qrEcLevel" class="u-select">
-            <option v-for="e in QR_EC_LEVELS" :key="e.value" :value="e.value">{{ e.label }}</option>
-          </select>
-        </div>
-        <div class="u-row">
-          <label class="u-label u-label--inline" for="bc-qm">Quiet margin (modules)</label>
-          <span class="u-val">{{ qrMargin }}</span>
-        </div>
-        <input id="bc-qm" v-model.number="qrMargin" class="u-range" type="range" min="1" max="4" step="1" />
-        <p v-if="showQrMarginWarn" class="warn">Low quiet zone — scanners may fail; try margin ≥ 2.</p>
-        <div class="u-colors">
-          <div>
-            <label class="u-label" for="c-dark">Modules</label>
-            <input id="c-dark" v-model="qrDark" type="color" class="u-color" />
+          <template v-else>
+            <p class="u-label">Wi‑Fi QR (payload is generated)</p>
+            <label class="u-label" for="wf-ssid">Network name (SSID)</label>
+            <input id="wf-ssid" v-model="wifiSsid" class="u-input" type="text" autocomplete="off" />
+            <label class="u-label" for="wf-sec">Security</label>
+            <div class="u-select-wrap">
+              <select id="wf-sec" v-model="wifiSecurity" class="u-select">
+                <option v-for="w in WIFI_SECURITY" :key="w.value" :value="w.value">{{ w.label }}</option>
+              </select>
+            </div>
+            <label class="u-label" for="wf-pass">Password</label>
+            <input
+              id="wf-pass"
+              v-model="wifiPassword"
+              class="u-input"
+              type="password"
+              autocomplete="off"
+              :disabled="wifiSecurity === 'nopass'"
+            />
+            <label class="u-check">
+              <input v-model="wifiHidden" type="checkbox" />
+              Hidden network
+            </label>
+          </template>
+
+          <div v-if="recent.length" class="recent">
+            <div class="recent__head">
+              <span class="recent__label">Recent</span>
+              <button type="button" class="recent__clear" @click="clearRecent">Clear</button>
+            </div>
+            <div class="recent__chips">
+              <button v-for="(r, i) in recent" :key="i + r" type="button" class="chip" :title="r" @click="pickRecent(r)">
+                {{ r.length > 30 ? `${r.slice(0, 30)}…` : r }}
+              </button>
+            </div>
           </div>
-          <div>
-            <label class="u-label" for="c-light">Background</label>
-            <input id="c-light" v-model="qrLight" type="color" class="u-color" />
+        </SectionCard>
+
+        <SectionCard
+          v-show="format === 'qrcode'"
+          title="3 · QR options"
+          description="Error correction, quiet zone, colors, and export size."
+        >
+          <label class="u-label" for="bc-ec">Error correction</label>
+          <div class="u-select-wrap">
+            <select id="bc-ec" v-model="qrEcLevel" class="u-select">
+              <option v-for="e in QR_EC_LEVELS" :key="e.value" :value="e.value">{{ e.label }}</option>
+            </select>
           </div>
-        </div>
-        <label class="u-label" for="bc-size">Preview &amp; export size</label>
-        <div class="u-select-wrap">
-          <select id="bc-size" v-model="sizePreset" class="u-select">
-            <option v-for="s in SIZE_PRESETS" :key="s.value" :value="s.value">{{ s.label }}</option>
-          </select>
-        </div>
-      </SectionCard>
+          <div class="u-row">
+            <label class="u-label u-label--inline" for="bc-qm">Quiet margin (modules)</label>
+            <span class="u-val">{{ qrMargin }}</span>
+          </div>
+          <input id="bc-qm" v-model.number="qrMargin" class="u-range" type="range" min="1" max="4" step="1" />
+          <p v-if="showQrMarginWarn" class="warn">Low quiet zone — scanners may fail; try margin ≥ 2.</p>
+          <div class="u-colors">
+            <div>
+              <label class="u-label" for="c-dark">Modules</label>
+              <input id="c-dark" v-model="qrDark" type="color" class="u-color" />
+            </div>
+            <div>
+              <label class="u-label" for="c-light">Background</label>
+              <input id="c-light" v-model="qrLight" type="color" class="u-color" />
+            </div>
+          </div>
+          <label class="u-label" for="bc-size">Preview &amp; export size</label>
+          <div class="u-select-wrap">
+            <select id="bc-size" v-model="sizePreset" class="u-select">
+              <option v-for="s in SIZE_PRESETS" :key="s.value" :value="s.value">{{ s.label }}</option>
+            </select>
+          </div>
+        </SectionCard>
 
-      <SectionCard v-show="format && format !== 'qrcode'" title="Linear barcode"
-        description="Padding around the bars (pixels).">
-        <div class="u-row">
-          <label class="u-label u-label--inline" for="bc-lm">Quiet margin</label>
-          <span class="u-val">{{ linearMargin }}px</span>
-        </div>
-        <input id="bc-lm" v-model.number="linearMargin" class="u-range" type="range" min="4" max="24" step="1" />
-        <p v-if="showLinearMarginWarn" class="warn">Low quiet zone — increase margin for reliable scans.</p>
-        <label class="u-check u-check--block">
-          <input v-model="linearShowText" type="checkbox" />
-          Show human-readable text under bars
-        </label>
-      </SectionCard>
-
-      <p class="hint">
-        EAN-13: 12 digits (check digit added). EAN-8: 7 digits. UPC: 11. ITF-14: even number of digits.
-      </p>
-
-      <SectionCard title="Preview" :dense="true">
-        <div class="preview" :class="format === 'qrcode' ? 'preview--qr' : 'preview--barcode'"
-          :style="format === 'qrcode' ? { width: `${presetPx}px`, height: `${presetPx}px` } : undefined">
-          <canvas ref="canvasRef" class="preview__canvas"
-            :style="format === 'qrcode' ? { width: `${presetPx}px`, height: `${presetPx}px` } : undefined" />
-        </div>
-        <p v-if="error && text.trim() && format" class="err" role="alert">{{ error }}</p>
-      </SectionCard>
-
-      <SectionCard title="Export" description="File type, filename pattern, then copy or save.">
-        <label class="u-label" for="bc-download">File type</label>
-        <div class="u-select-wrap">
-          <select id="bc-download" v-model="downloadKind" class="u-select">
-            <option v-for="d in DOWNLOAD_KINDS" :key="d.value" :value="d.value">{{ d.label }}</option>
-          </select>
-        </div>
-        <label class="u-label" for="fn-pat">Filename pattern</label>
-        <div class="u-select-wrap">
-          <select id="fn-pat" v-model="filenamePattern" class="u-select">
-            <option v-for="p in FILENAME_PATTERNS" :key="p.value" :value="p.value">{{ p.label }}</option>
-          </select>
-        </div>
-        <div class="actions actions--3">
-          <button type="button" class="btn btn--ghost" :disabled="!canDownload()" @click="copyOutput">
-            Copy
-          </button>
-          <button type="button" class="btn btn--ghost" :disabled="!canDownload()" @click="copyDataUrl">
-            Data URL
-          </button>
-          <button type="button" class="btn btn--primary" :disabled="!canDownload()" @click="downloadFile">
-            Download
-          </button>
-        </div>
-        <p v-if="copyStatus" class="toast">{{ copyStatus }}</p>
-      </SectionCard>
-
-      <SectionCard title="Batch export" description="One value per line · uses symbology &amp; file type above." dense>
-        <label class="u-label" for="batch">Lines</label>
-        <textarea id="batch" v-model="batchText" class="u-textarea" rows="3" placeholder="Line 1&#10;Line 2&#10;…" />
-        <div class="batch-actions">
-          <label class="btn btn--ghost btn--file">
-            Import .txt / .csv
-            <input type="file" accept=".txt,.csv,text/plain,text/csv" class="visually-hidden" @change="onCsvImport" />
+        <SectionCard
+          v-show="format && format !== 'qrcode'"
+          title="3 · Linear options"
+          description="Quiet zone and whether to show digits under the bars."
+        >
+          <div class="u-row">
+            <label class="u-label u-label--inline" for="bc-lm">Quiet margin</label>
+            <span class="u-val">{{ linearMargin }}px</span>
+          </div>
+          <input id="bc-lm" v-model.number="linearMargin" class="u-range" type="range" min="4" max="24" step="1" />
+          <p v-if="showLinearMarginWarn" class="warn">Low quiet zone — increase margin for reliable scans.</p>
+          <label class="u-check u-check--block">
+            <input v-model="linearShowText" type="checkbox" />
+            Show human-readable text under bars
           </label>
-          <button type="button" class="btn btn--primary" :disabled="!canBatchZipFn()" @click="downloadBatchZip">
-            ZIP all
+        </SectionCard>
+
+        <p v-if="format && format !== 'qrcode'" class="hint hint--block">
+          Linear lengths: EAN-13 — 12 digits (check digit added). EAN-8 — 7. UPC — 11. ITF-14 — even count of digits.
+        </p>
+
+        <SectionCard title="Preview" :dense="true" description="Updates as you edit — switch to Export when ready.">
+          <div class="preview" :class="format === 'qrcode' ? 'preview--qr' : 'preview--barcode'"
+            :style="format === 'qrcode' ? { width: `${presetPx}px`, height: `${presetPx}px` } : undefined">
+            <canvas ref="canvasRef" class="preview__canvas"
+              :style="format === 'qrcode' ? { width: `${presetPx}px`, height: `${presetPx}px` } : undefined" />
+          </div>
+          <p v-if="error && text.trim() && format" class="err" role="alert">{{ error }}</p>
+          <button type="button" class="btn btn--primary btn--full" @click="activeTab = 'export'">
+            Next: export &amp; save
           </button>
-        </div>
-      </SectionCard>
+        </SectionCard>
+      </div>
 
-      <p class="privacy">Generation runs locally in your browser — payload is not sent to a server.</p>
+      <div
+        v-show="activeTab === 'export'"
+        id="panel-export"
+        class="tab-panel"
+        role="tabpanel"
+        aria-labelledby="tab-export"
+      >
+        <SectionCard title="Export" description="Pick file type and name, then copy or download.">
+          <label class="u-label" for="bc-download">File type</label>
+          <div class="u-select-wrap">
+            <select id="bc-download" v-model="downloadKind" class="u-select">
+              <option v-for="d in DOWNLOAD_KINDS" :key="d.value" :value="d.value">{{ d.label }}</option>
+            </select>
+          </div>
+          <label class="u-label" for="fn-pat">Filename pattern</label>
+          <div class="u-select-wrap">
+            <select id="fn-pat" v-model="filenamePattern" class="u-select">
+              <option v-for="p in FILENAME_PATTERNS" :key="p.value" :value="p.value">{{ p.label }}</option>
+            </select>
+          </div>
+          <div class="actions actions--3">
+            <button type="button" class="btn btn--ghost" :disabled="!canDownload()" @click="copyOutput">
+              Copy
+            </button>
+            <button type="button" class="btn btn--ghost" :disabled="!canDownload()" @click="copyDataUrl">
+              Data URL
+            </button>
+            <button type="button" class="btn btn--primary" :disabled="!canDownload()" @click="downloadFile">
+              Download
+            </button>
+          </div>
+          <p v-if="copyStatus" class="toast">{{ copyStatus }}</p>
+        </SectionCard>
 
-      <footer class="signature" aria-label="Author">
-        <span class="signature__text">Built with ❤️ by</span>
-        <a class="signature__link" href="https://github.com/zfhassaan" target="_blank" rel="noopener noreferrer">
-          zfhassaan
-        </a>
-      </footer>
+        <SectionCard title="Batch export" description="One value per line — uses the same format and file type as above." dense>
+          <label class="u-label" for="batch">Lines</label>
+          <textarea id="batch" v-model="batchText" class="u-textarea" rows="3" placeholder="Line 1&#10;Line 2&#10;…" />
+          <div class="batch-actions">
+            <label class="btn btn--ghost btn--file">
+              Import .txt / .csv
+              <input type="file" accept=".txt,.csv,text/plain,text/csv" class="visually-hidden" @change="onCsvImport" />
+            </label>
+            <button type="button" class="btn btn--primary" :disabled="!canBatchZipFn()" @click="downloadBatchZip">
+              ZIP all
+            </button>
+          </div>
+        </SectionCard>
+
+        <p class="privacy">Generation runs locally in your browser — payload is not sent to a server.</p>
+
+        <footer class="signature" aria-label="Author">
+          <span class="signature__text">Built with care by</span>
+          <a class="signature__link" href="https://github.com/zfhassaan" target="_blank" rel="noopener noreferrer">
+            zfhassaan
+          </a>
+        </footer>
+      </div>
     </main>
+
+    <Teleport to="body">
+      <div
+        v-if="infoOpen"
+        class="info-overlay"
+        role="presentation"
+        @click.self="closeInfo"
+      >
+        <div
+          class="info-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="info-title"
+          tabindex="-1"
+        >
+          <div class="info-dialog__head">
+            <h2 id="info-title" class="info-dialog__title">About</h2>
+            <button
+              ref="infoCloseRef"
+              type="button"
+              class="info-dialog__close"
+              aria-label="Close"
+              @click="closeInfo"
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+          </div>
+          <div class="info-dialog__body">
+            <p class="info-dialog__lead">
+              Create QR and linear barcodes in your browser — no accounts or cloud upload.
+            </p>
+
+            <section class="info-block">
+              <h3 class="info-block__title">Privacy</h3>
+              <p class="info-block__text">Everything runs locally. Your payload stays on your device.</p>
+            </section>
+
+            <section class="info-block">
+              <h3 class="info-block__title">Keyboard shortcut</h3>
+              <p class="info-block__text">
+                You can assign <strong>Queue current tab URL</strong> in
+                <code class="code">chrome://extensions/shortcuts</code>, then open this popup and use
+                <strong>Use tab URL</strong> on the Create tab.
+              </p>
+            </section>
+
+            <section class="info-block">
+              <h3 class="info-block__title">Author</h3>
+              <p class="info-block__text">
+                Made by
+                <a href="https://github.com/zfhassaan" target="_blank" rel="noopener noreferrer" class="info-link">
+                  zfhassaan
+                </a>
+                — feedback and issues are welcome on GitHub.
+              </p>
+            </section>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <style scoped>
+.tab-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 18px 12px;
+  margin-top: -4px;
+}
+
+.tab-bar__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius-md);
+  background: var(--bc-panel);
+  color: var(--bc-muted);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease;
+}
+
+.tab-bar__btn[aria-selected='true'] {
+  background: var(--bc-card);
+  border-color: var(--bc-accent);
+  color: var(--bc-fg);
+  box-shadow: var(--bc-shadow-sm);
+}
+
+.tab-bar__btn:hover {
+  border-color: var(--bc-accent);
+  color: var(--bc-fg);
+}
+
+.tab-bar__btn:focus-visible {
+  outline: none;
+  box-shadow: var(--bc-focus);
+}
+
+.tab-bar__label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.tab-bar__hint {
+  font-size: 0.65rem;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.info-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: white !important;
+}
+
+.info-dialog {
+  width: min(100%, 380px);
+  max-height: min(90vh, 520px);
+  overflow: auto;
+  border-radius: var(--bc-radius-lg);
+  border: 1px solid var(--bc-border);
+  background: var(--bc-card);
+  box-shadow: var(--bc-shadow-md);
+  color: var(--bc-fg);
+}
+
+.info-dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--bc-border);
+  position: sticky;
+  top: 0;
+  background: var(--bc-card);
+  z-index: 1;
+}
+
+.info-dialog__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.info-dialog__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: var(--bc-radius-sm);
+  background: transparent;
+  color: var(--bc-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.info-dialog__close:hover {
+  background: var(--bc-panel);
+  color: var(--bc-fg);
+}
+
+.info-dialog__close:focus-visible {
+  outline: none;
+  box-shadow: var(--bc-focus);
+}
+
+.info-dialog__body {
+  padding: 14px 16px 18px;
+}
+
+.info-dialog__lead {
+  margin: 0 0 14px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--bc-muted);
+}
+
+.info-block {
+  margin-bottom: 14px;
+}
+
+.info-block:last-child {
+  margin-bottom: 0;
+}
+
+.info-block__title {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bc-muted);
+}
+
+.info-block__text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--bc-fg);
+}
+
+.info-link {
+  font-weight: 700;
+  color: var(--bc-accent-text);
+  text-decoration: none;
+}
+
+.info-link:hover {
+  text-decoration: underline;
+}
+
+.info-link:focus-visible {
+  outline: none;
+  border-radius: 4px;
+  box-shadow: var(--bc-focus);
+}
+
+.btn--full {
+  width: 100%;
+  margin-top: 12px;
+  flex: none;
+}
+
+.hint--block {
+  margin: 0;
+  padding: 0 2px 4px;
+}
+
 .req {
   color: #f43f5e;
   text-decoration: none;
