@@ -1,0 +1,145 @@
+/**
+ * Design tokens — extend here as the app grows (new themes, density, etc.).
+ */
+:root {
+  --bc-radius-sm: 8px;
+  --bc-radius-md: 12px;
+  --bc-radius-lg: 16px;
+  --bc-radius-full: 9999px;
+  --bc-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --bc-shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+  --bc-accent: #4f46e5;
+  --bc-accent-soft: rgba(79, 70, 229, 0.12);
+  --bc-focus: 0 0 0 3px rgba(79, 70, 229, 0.35);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-width: 420px;
+  /* Extension popups: avoid 100vh — it often resolves tiny and breaks max-height. */
+  min-height: min-content;
+  font-family:
+    'Inter',
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+#app {
+  display: block;
+  min-width: 420px;
+  min-height: min-content;
+}
+
+/* Inter optional — falls back to system */
+@supports (font-variation-settings: normal) {
+  html {
+    font-optical-sizing: auto;
+  }
+}
+
+.shell {
+  --bc-fg: #0f172a;
+  --bc-bg: #f1f5f9;
+  --bc-card: #ffffff;
+  --bc-muted: #64748b;
+  --bc-border: #e2e8f0;
+  --bc-panel: #f8fafc;
+  --bc-elevated: #ffffff;
+  --bc-accent-text: #4f46e5;
+}
+
+.shell[data-theme='light'] {
+  --bc-fg: #0f172a;
+  --bc-bg: #f1f5f9;
+  --bc-card: #ffffff;
+  --bc-muted: #64748b;
+  --bc-border: #e2e8f0;
+  --bc-panel: #f8fafc;
+  --bc-elevated: #ffffff;
+}
+
+.shell[data-theme='dark'] {
+  --bc-fg: #f1f5f9;
+  --bc-bg: #0f172a;
+  --bc-card: #1e293b;
+  --bc-muted: #94a3b8;
+  --bc-border: #334155;
+  --bc-panel: #1e293b;
+  --bc-elevated: #334155;
+  --bc-accent-text: #a5b4fc;
+  --bc-accent-soft: rgba(129, 140, 248, 0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  .shell[data-theme='system'] {
+    --bc-fg: #f1f5f9;
+    --bc-bg: #0f172a;
+    --bc-card: #1e293b;
+    --bc-muted: #94a3b8;
+    --bc-border: #334155;
+    --bc-panel: #1e293b;
+    --bc-elevated: #334155;
+    --bc-accent-text: #a5b4fc;
+    --bc-accent-soft: rgba(129, 140, 248, 0.15);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .shell[data-theme='system'] {
+    --bc-fg: #0f172a;
+    --bc-bg: #f1f5f9;
+    --bc-card: #ffffff;
+    --bc-muted: #64748b;
+    --bc-border: #e2e8f0;
+    --bc-panel: #f8fafc;
+    --bc-elevated: #ffffff;
+  }
+}
+
+.shell {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 420px;
+  max-width: 440px;
+  /* Chrome caps extension popups ~600px tall; scroll inside if needed. Never use 100vh here. */
+  max-height: 580px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  color: var(--bc-fg);
+  background: var(--bc-bg);
+  scrollbar-gutter: stable;
+}
+
+.shell::-webkit-scrollbar {
+  width: 8px;
+}
+.shell::-webkit-scrollbar-thumb {
+  background: var(--bc-border);
+  border-radius: var(--bc-radius-full);
+}
+
+.shell__accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed, #c026d3);
+  z-index: 2;
+}
+
+.shell__main {
+  padding: 16px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}

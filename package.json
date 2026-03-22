@@ -1,20 +1,27 @@
 {
-  "name": "extension",
+  "name": "barcode-generator-extension",
   "version": "1.0.0",
-  "main": "background.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "vite build",
     "dev": "vite"
   },
-  "keywords": [],
+  "keywords": [
+    "chrome-extension",
+    "barcode",
+    "qr"
+  ],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Chrome extension — QR and linear barcodes in the toolbar popup.",
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.0.0-beta.33",
     "@vitejs/plugin-vue": "^6.0.3",
     "vite": "^7.3.1",
     "vue": "^3.5.26"
+  },
+  "dependencies": {
+    "jsbarcode": "^3.12.3",
+    "jszip": "^3.10.1",
+    "qrcode": "^1.5.4"
   }
 }

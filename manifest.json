@@ -1,21 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Vue MV3 Extension",
-  "version": "1.0.0",
-  "description": "Chrome Extension using Vue and Vite",
+  "name": "Barcode Generator",
+  "version": "1.1.0",
+  "description": "Create QR codes and linear barcodes (CODE128, EAN-13, UPC, and more) from the toolbar.",
   "action": {
+    "default_title": "Barcode Generator",
     "default_popup": "src/popup/index.html"
   },
   "background": {
     "service_worker": "src/background/index.js",
     "type": "module"
   },
-  "permissions": ["storage", "tabs", "scripting"],
-  "host_permissions": ["<all_urls>"],
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["src/content/index.js"]
-    }
-  ]
+  "permissions": ["storage", "clipboardWrite", "contextMenus"]
 }
