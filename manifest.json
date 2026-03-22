@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Barcode Generator",
+  "name": "Barcode Studio",
   "version": "1.2.0",
   "description": "Create QR codes and linear barcodes (CODE128, EAN-13, UPC, and more) from the toolbar.",
   "icons": {
@@ -10,7 +10,7 @@
     "128": "icons/barcode-128.png"
   },
   "action": {
-    "default_title": "Barcode Generator",
+    "default_title": "Barcode Studio",
     "default_popup": "src/popup/index.html",
     "default_icon": {
       "16": "icons/barcode-16.png",

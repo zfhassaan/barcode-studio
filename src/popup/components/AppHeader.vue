@@ -16,33 +16,19 @@ defineEmits(['update:theme', 'open-info'])
           <img class="top__logo" src="/icons/barcode.svg" width="40" height="40" alt="" />
         </div>
         <div class="top__text">
-          <h1 class="top__title">Barcode Generator</h1>
+          <h1 class="top__title">Barcode Studio</h1>
           <p class="top__tag">Symbology · Export · Batch</p>
         </div>
       </div>
       <div class="top__actions">
-        <button
-          type="button"
-          class="top__icon-btn"
-          aria-label="About and tips"
-          title="About and tips"
-          @click="$emit('open-info')"
-        >
+        <button type="button" class="top__icon-btn" aria-label="About and tips" title="About and tips"
+          @click="$emit('open-info')">
           <svg class="top__icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none">
             <circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.75" />
-            <path
-              stroke="currentColor"
-              stroke-width="1.75"
-              stroke-linecap="round"
-              d="M12 10.5V17M12 7.5h.01"
-            />
+            <path stroke="currentColor" stroke-width="1.75" stroke-linecap="round" d="M12 10.5V17M12 7.5h.01" />
           </svg>
         </button>
-        <ThemeToggle
-          class="top__theme"
-          :model-value="theme"
-          @update:model-value="$emit('update:theme', $event)"
-        />
+        <ThemeToggle class="top__theme" :model-value="theme" @update:model-value="$emit('update:theme', $event)" />
       </div>
     </div>
   </header>
