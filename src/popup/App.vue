@@ -5,6 +5,8 @@ import {
   DOWNLOAD_KINDS,
   QR_EC_LEVELS,
   SIZE_PRESETS,
+  FILENAME_PATTERNS,
+  WIFI_SECURITY,
 } from './constants.js'
 import AppHeader from './components/AppHeader.vue'
 import SectionCard from './components/SectionCard.vue'
@@ -18,6 +20,7 @@ const {
   qrDark,
   qrLight,
   linearMargin,
+  linearShowText,
   sizePreset,
   theme,
   recent,
@@ -26,10 +29,21 @@ const {
   error,
   canvasRef,
   presetPx,
+  payloadMode,
+  wifiSsid,
+  wifiPassword,
+  wifiSecurity,
+  wifiHidden,
+  filenamePattern,
+  showQrMarginWarn,
+  showLinearMarginWarn,
   canDownload,
   canBatchZipFn,
   downloadFile,
   copyOutput,
+  copyDataUrl,
+  fillCurrentTabUrl,
+  resetFields,
   downloadBatchZip,
   pickRecent,
   clearRecent,
@@ -44,9 +58,72 @@ const {
 
     <main class="shell__main">
       <SectionCard title="Content" description="URLs, SKUs, GTINs, or any text the symbology allows.">
-        <label class="u-label" for="bc-text">Payload</label>
-        <textarea id="bc-text" v-model="text" class="u-textarea" rows="3" spellcheck="false"
-          placeholder="Paste or type your data…" />
+        <div class="toolbar-row">
+          <button type="button" class="btn btn--ghost btn--sm" @click="fillCurrentTabUrl">
+            Use tab URL
+          </button>
+          <button type="button" class="btn btn--ghost btn--sm" @click="resetFields">Reset</button>
+        </div>
+        <p class="hint hint--tight">
+          Optional: assign shortcut to “Queue current tab URL” in
+          <code class="code">chrome://extensions/shortcuts</code>
+        </p>
+
+        <div v-if="format === 'qrcode'" class="payload-seg" role="group" aria-label="QR payload type">
+          <button
+            type="button"
+            class="payload-seg__btn"
+            :class="{ 'payload-seg__btn--on': payloadMode === 'plain' }"
+            @click="payloadMode = 'plain'"
+          >
+            Plain text
+          </button>
+          <button
+            type="button"
+            class="payload-seg__btn"
+            :class="{ 'payload-seg__btn--on': payloadMode === 'wifi' }"
+            @click="payloadMode = 'wifi'"
+          >
+            Wi‑Fi
+          </button>
+        </div>
+
+        <template v-if="format !== 'qrcode' || payloadMode === 'plain'">
+          <label class="u-label" for="bc-text">Payload</label>
+          <textarea
+            id="bc-text"
+            v-model="text"
+            class="u-textarea"
+            rows="3"
+            spellcheck="false"
+            placeholder="Paste or type your data…"
+          />
+        </template>
+
+        <template v-else>
+          <p class="u-label">Wi‑Fi QR (payload is generated)</p>
+          <label class="u-label" for="wf-ssid">Network name (SSID)</label>
+          <input id="wf-ssid" v-model="wifiSsid" class="u-input" type="text" autocomplete="off" />
+          <label class="u-label" for="wf-sec">Security</label>
+          <div class="u-select-wrap">
+            <select id="wf-sec" v-model="wifiSecurity" class="u-select">
+              <option v-for="w in WIFI_SECURITY" :key="w.value" :value="w.value">{{ w.label }}</option>
+            </select>
+          </div>
+          <label class="u-label" for="wf-pass">Password</label>
+          <input
+            id="wf-pass"
+            v-model="wifiPassword"
+            class="u-input"
+            type="password"
+            autocomplete="off"
+            :disabled="wifiSecurity === 'nopass'"
+          />
+          <label class="u-check">
+            <input v-model="wifiHidden" type="checkbox" />
+            Hidden network
+          </label>
+        </template>
 
         <div v-if="recent.length" class="recent">
           <div class="recent__head">
@@ -84,6 +161,7 @@ const {
           <span class="u-val">{{ qrMargin }}</span>
         </div>
         <input id="bc-qm" v-model.number="qrMargin" class="u-range" type="range" min="1" max="4" step="1" />
+        <p v-if="showQrMarginWarn" class="warn">Low quiet zone — scanners may fail; try margin ≥ 2.</p>
         <div class="u-colors">
           <div>
             <label class="u-label" for="c-dark">Modules</label>
@@ -109,6 +187,11 @@ const {
           <span class="u-val">{{ linearMargin }}px</span>
         </div>
         <input id="bc-lm" v-model.number="linearMargin" class="u-range" type="range" min="4" max="24" step="1" />
+        <p v-if="showLinearMarginWarn" class="warn">Low quiet zone — increase margin for reliable scans.</p>
+        <label class="u-check u-check--block">
+          <input v-model="linearShowText" type="checkbox" />
+          Show human-readable text under bars
+        </label>
       </SectionCard>
 
       <p class="hint">
@@ -124,16 +207,25 @@ const {
         <p v-if="error && text.trim() && format" class="err" role="alert">{{ error }}</p>
       </SectionCard>
 
-      <SectionCard title="Export" description="File type, then copy or save.">
+      <SectionCard title="Export" description="File type, filename pattern, then copy or save.">
         <label class="u-label" for="bc-download">File type</label>
         <div class="u-select-wrap">
           <select id="bc-download" v-model="downloadKind" class="u-select">
             <option v-for="d in DOWNLOAD_KINDS" :key="d.value" :value="d.value">{{ d.label }}</option>
           </select>
         </div>
-        <div class="actions">
+        <label class="u-label" for="fn-pat">Filename pattern</label>
+        <div class="u-select-wrap">
+          <select id="fn-pat" v-model="filenamePattern" class="u-select">
+            <option v-for="p in FILENAME_PATTERNS" :key="p.value" :value="p.value">{{ p.label }}</option>
+          </select>
+        </div>
+        <div class="actions actions--3">
           <button type="button" class="btn btn--ghost" :disabled="!canDownload()" @click="copyOutput">
             Copy
+          </button>
+          <button type="button" class="btn btn--ghost" :disabled="!canDownload()" @click="copyDataUrl">
+            Data URL
           </button>
           <button type="button" class="btn btn--primary" :disabled="!canDownload()" @click="downloadFile">
             Download
@@ -155,6 +247,8 @@ const {
           </button>
         </div>
       </SectionCard>
+
+      <p class="privacy">Generation runs locally in your browser — payload is not sent to a server.</p>
 
       <footer class="signature" aria-label="Author">
         <span class="signature__text">Built with ❤️ by</span>
@@ -208,6 +302,122 @@ const {
   outline: none;
   border-color: var(--bc-accent);
   box-shadow: var(--bc-focus);
+}
+
+.u-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius-md);
+  font-size: 0.875rem;
+  background: var(--bc-elevated);
+  color: var(--bc-fg);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.u-input:hover:not(:disabled) {
+  border-color: var(--bc-muted);
+}
+
+.u-input:focus:not(:disabled) {
+  outline: none;
+  border-color: var(--bc-accent);
+  box-shadow: var(--bc-focus);
+}
+
+.u-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.payload-seg {
+  display: flex;
+  gap: 0;
+  margin: 10px 0 12px;
+  padding: 3px;
+  border-radius: var(--bc-radius-md);
+  border: 1px solid var(--bc-border);
+  background: var(--bc-panel);
+}
+
+.payload-seg__btn {
+  flex: 1;
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: none;
+  border-radius: calc(var(--bc-radius-md) - 2px);
+  background: transparent;
+  color: var(--bc-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.payload-seg__btn:hover {
+  color: var(--bc-fg);
+}
+
+.payload-seg__btn--on {
+  background: var(--bc-elevated);
+  color: var(--bc-fg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.u-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--bc-muted);
+  cursor: pointer;
+}
+
+.u-check input {
+  accent-color: var(--bc-accent);
+}
+
+.u-check--block {
+  display: flex;
+  margin-top: 8px;
+}
+
+.warn {
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: #fbbf24;
+  margin: -8px 0 10px;
+}
+
+.privacy {
+  font-size: 0.68rem;
+  line-height: 1.45;
+  color: var(--bc-muted);
+  text-align: center;
+  margin: 12px 8px 0;
+  padding: 0 4px;
+}
+
+.hint--tight {
+  margin-bottom: 8px;
+}
+
+.code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.7em;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--bc-panel);
+  border: 1px solid var(--bc-border);
 }
 
 .u-select-wrap {
@@ -384,6 +594,25 @@ const {
   display: flex;
   gap: 10px;
   margin-top: 4px;
+}
+
+.actions--3 {
+  flex-wrap: wrap;
+}
+
+.actions--3 .btn {
+  flex: 1 1 calc(33.333% - 7px);
+  min-width: 88px;
+  min-height: 38px;
+  font-size: 0.8125rem;
+  padding: 0 10px;
+}
+
+.btn--sm {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 0.8125rem;
+  flex: 0 1 auto;
 }
 
 .btn {

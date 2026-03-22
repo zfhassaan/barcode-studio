@@ -13,6 +13,14 @@ import {
   sanitizeFilename,
 } from '../constants.js'
 
+function escapeWifiValue(s) {
+  return String(s ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/"/g, '\\"')
+}
+
 export function useBarcodeGenerator() {
   const text = ref('')
   const format = ref('')
@@ -22,6 +30,7 @@ export function useBarcodeGenerator() {
   const qrDark = ref('#111827')
   const qrLight = ref('#ffffff')
   const linearMargin = ref(10)
+  const linearShowText = ref(true)
   const sizePreset = ref('medium')
   const theme = ref('system')
   const recent = ref([])
@@ -30,10 +39,25 @@ export function useBarcodeGenerator() {
   const error = ref('')
   const canvasRef = ref(null)
 
+  const payloadMode = ref('plain')
+  const wifiSsid = ref('')
+  const wifiPassword = ref('')
+  const wifiSecurity = ref('WPA')
+  const wifiHidden = ref(false)
+
+  const filenamePattern = ref('default')
+
   const presetPx = computed(() => {
     const p = SIZE_PRESETS.find((s) => s.value === sizePreset.value)
     return p ? p.px : 256
   })
+
+  const showQrMarginWarn = computed(
+    () => format.value === 'qrcode' && qrMargin.value <= 1,
+  )
+  const showLinearMarginWarn = computed(
+    () => !!format.value && format.value !== 'qrcode' && linearMargin.value < 6,
+  )
 
   let debounceTimer = null
 
@@ -42,6 +66,26 @@ export function useBarcodeGenerator() {
     debounceTimer = window.setTimeout(() => {
       render().catch(() => {})
     }, 120)
+  }
+
+  function buildWifiPayload() {
+    const T = wifiSecurity.value === 'nopass' ? 'nopass' : wifiSecurity.value
+    const S = escapeWifiValue(wifiSsid.value)
+    const P = wifiSecurity.value === 'nopass' ? '' : escapeWifiValue(wifiPassword.value)
+    const H = wifiHidden.value ? 'true' : 'false'
+    return `WIFI:T:${T};S:${S};P:${P};H:${H};;`
+  }
+
+  function buildDownloadBasename(slug, safe, ext) {
+    const p = filenamePattern.value
+    const d = new Date()
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    const dateStr = `${y}${m}${day}`
+    if (p === 'dated') return `${slug}-${dateStr}-${safe}.${ext}`
+    if (p === 'minimal') return `${safe}.${ext}`
+    return `${slug}-${safe}.${ext}`
   }
 
   async function renderBarcodeToCanvasWith(canvas, value, fmt, qrPx) {
@@ -61,8 +105,8 @@ export function useBarcodeGenerator() {
         format: fmt,
         width: 2,
         height: 80,
-        displayValue: true,
-        fontSize: 13,
+        displayValue: linearShowText.value,
+        fontSize: linearShowText.value ? 13 : 0,
         margin: linearMargin.value,
         background: '#ffffff',
         lineColor: '#111827',
@@ -87,8 +131,8 @@ export function useBarcodeGenerator() {
       format: fmt,
       width: 2,
       height: 80,
-      displayValue: true,
-      fontSize: 13,
+      displayValue: linearShowText.value,
+      fontSize: linearShowText.value ? 13 : 0,
       margin: linearMargin.value,
       background: '#ffffff',
       lineColor: '#111827',
@@ -170,10 +214,17 @@ export function useBarcodeGenerator() {
       [STORAGE.qrDark]: qrDark.value,
       [STORAGE.qrLight]: qrLight.value,
       [STORAGE.linearMargin]: linearMargin.value,
+      [STORAGE.linearShowText]: linearShowText.value,
       [STORAGE.sizePreset]: sizePreset.value,
       [STORAGE.theme]: theme.value,
       [STORAGE.recent]: recent.value,
       [STORAGE.batch]: batchText.value,
+      [STORAGE.payloadMode]: payloadMode.value,
+      [STORAGE.wifiSsid]: wifiSsid.value,
+      [STORAGE.wifiPassword]: wifiPassword.value,
+      [STORAGE.wifiSecurity]: wifiSecurity.value,
+      [STORAGE.wifiHidden]: wifiHidden.value,
+      [STORAGE.filenamePattern]: filenamePattern.value,
     })
   }
 
@@ -245,7 +296,7 @@ export function useBarcodeGenerator() {
       try {
         const svgMarkup = await buildSvgMarkup(value, format.value)
         const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' })
-        triggerBlobDownload(blob, `${slug}-${safe}.svg`)
+        triggerBlobDownload(blob, buildDownloadBasename(slug, safe, 'svg'))
         addToRecent()
       } catch (e) {
         error.value = e?.message || String(e)
@@ -257,7 +308,7 @@ export function useBarcodeGenerator() {
     if (!canvas) return
     const dataUrl = rasterDataUrlFromCanvas(canvas, kind)
     const ext = extForRasterDataUrl(dataUrl, kind)
-    triggerDownload(dataUrl, `${slug}-${safe}.${ext}`)
+    triggerDownload(dataUrl, buildDownloadBasename(slug, safe, ext))
     addToRecent()
   }
 
@@ -284,6 +335,65 @@ export function useBarcodeGenerator() {
     window.setTimeout(() => {
       copyStatus.value = ''
     }, 2200)
+  }
+
+  async function copyDataUrl() {
+    if (!canDownload()) return
+    copyStatus.value = ''
+    try {
+      const value = text.value.trim()
+      const kind = downloadKind.value
+      if (kind === 'svg') {
+        const svg = await buildSvgMarkup(value, format.value)
+        const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+        await navigator.clipboard.writeText(dataUrl)
+      } else {
+        const canvas = canvasRef.value
+        if (!canvas) return
+        const dataUrl = rasterDataUrlFromCanvas(canvas, kind)
+        await navigator.clipboard.writeText(dataUrl)
+      }
+      copyStatus.value = 'Data URL copied'
+      addToRecent()
+    } catch {
+      copyStatus.value = 'Copy failed'
+    }
+    window.setTimeout(() => {
+      copyStatus.value = ''
+    }, 2200)
+  }
+
+  async function fillCurrentTabUrl() {
+    copyStatus.value = ''
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      const u = tab?.url
+      if (!u || !/^https?:\/\//i.test(u)) {
+        copyStatus.value = 'No http(s) page on this tab'
+        window.setTimeout(() => {
+          copyStatus.value = ''
+        }, 2200)
+        return
+      }
+      payloadMode.value = 'plain'
+      text.value = u
+    } catch {
+      copyStatus.value = 'Could not read tab URL'
+      window.setTimeout(() => {
+        copyStatus.value = ''
+      }, 2200)
+    }
+  }
+
+  function resetFields() {
+    text.value = ''
+    batchText.value = ''
+    payloadMode.value = 'plain'
+    wifiSsid.value = ''
+    wifiPassword.value = ''
+    wifiSecurity.value = 'WPA'
+    wifiHidden.value = false
+    persist().catch(() => {})
   }
 
   async function downloadBatchZip() {
@@ -334,6 +444,11 @@ export function useBarcodeGenerator() {
 
   function pickRecent(entry) {
     text.value = entry
+    if (String(entry).startsWith('WIFI:')) {
+      payloadMode.value = 'wifi'
+    } else {
+      payloadMode.value = 'plain'
+    }
   }
 
   function clearRecent() {
@@ -354,6 +469,19 @@ export function useBarcodeGenerator() {
   }
 
   watch(
+    [wifiSsid, wifiPassword, wifiSecurity, wifiHidden, payloadMode, format],
+    () => {
+      if (format.value !== 'qrcode' || payloadMode.value !== 'wifi') return
+      const next = buildWifiPayload()
+      if (text.value !== next) text.value = next
+    },
+  )
+
+  watch(format, (f) => {
+    if (f !== 'qrcode' && payloadMode.value === 'wifi') payloadMode.value = 'plain'
+  })
+
+  watch(
     [
       text,
       format,
@@ -363,9 +491,12 @@ export function useBarcodeGenerator() {
       qrDark,
       qrLight,
       linearMargin,
+      linearShowText,
       sizePreset,
       theme,
       batchText,
+      payloadMode,
+      filenamePattern,
     ],
     () => {
       debounceRender()
@@ -383,15 +514,23 @@ export function useBarcodeGenerator() {
       [STORAGE.qrDark]: '#111827',
       [STORAGE.qrLight]: '#ffffff',
       [STORAGE.linearMargin]: 10,
+      [STORAGE.linearShowText]: true,
       [STORAGE.sizePreset]: 'medium',
       [STORAGE.theme]: 'system',
       [STORAGE.recent]: [],
       [STORAGE.batch]: '',
+      [STORAGE.payloadMode]: 'plain',
+      [STORAGE.wifiSsid]: '',
+      [STORAGE.wifiPassword]: '',
+      [STORAGE.wifiSecurity]: 'WPA',
+      [STORAGE.wifiHidden]: false,
+      [STORAGE.filenamePattern]: 'default',
     })
 
     const pre = await chrome.storage.local.get('contextPrefillText')
     if (typeof pre.contextPrefillText === 'string' && pre.contextPrefillText) {
       text.value = pre.contextPrefillText
+      payloadMode.value = 'plain'
       await chrome.storage.local.remove('contextPrefillText')
     } else {
       text.value = typeof stored[STORAGE.text] === 'string' ? stored[STORAGE.text] : ''
@@ -406,6 +545,7 @@ export function useBarcodeGenerator() {
     qrDark.value = typeof stored[STORAGE.qrDark] === 'string' ? stored[STORAGE.qrDark] : '#111827'
     qrLight.value = typeof stored[STORAGE.qrLight] === 'string' ? stored[STORAGE.qrLight] : '#ffffff'
     linearMargin.value = Math.min(24, Math.max(4, Number(stored[STORAGE.linearMargin]) || 10))
+    linearShowText.value = stored[STORAGE.linearShowText] !== false
     sizePreset.value = SIZE_PRESETS.some((s) => s.value === stored[STORAGE.sizePreset])
       ? stored[STORAGE.sizePreset]
       : 'medium'
@@ -414,6 +554,21 @@ export function useBarcodeGenerator() {
       : 'system'
     recent.value = Array.isArray(stored[STORAGE.recent]) ? stored[STORAGE.recent].slice(0, 10) : []
     batchText.value = typeof stored[STORAGE.batch] === 'string' ? stored[STORAGE.batch] : ''
+
+    payloadMode.value = stored[STORAGE.payloadMode] === 'wifi' ? 'wifi' : 'plain'
+    wifiSsid.value = typeof stored[STORAGE.wifiSsid] === 'string' ? stored[STORAGE.wifiSsid] : ''
+    wifiPassword.value = typeof stored[STORAGE.wifiPassword] === 'string' ? stored[STORAGE.wifiPassword] : ''
+    wifiSecurity.value = ['WPA', 'WEP', 'nopass'].includes(stored[STORAGE.wifiSecurity])
+      ? stored[STORAGE.wifiSecurity]
+      : 'WPA'
+    wifiHidden.value = !!stored[STORAGE.wifiHidden]
+    filenamePattern.value = ['default', 'dated', 'minimal'].includes(stored[STORAGE.filenamePattern])
+      ? stored[STORAGE.filenamePattern]
+      : 'default'
+
+    if (format.value === 'qrcode' && payloadMode.value === 'wifi') {
+      text.value = buildWifiPayload()
+    }
 
     await render()
   })
@@ -427,6 +582,7 @@ export function useBarcodeGenerator() {
     qrDark,
     qrLight,
     linearMargin,
+    linearShowText,
     sizePreset,
     theme,
     recent,
@@ -435,11 +591,22 @@ export function useBarcodeGenerator() {
     error,
     canvasRef,
     presetPx,
+    payloadMode,
+    wifiSsid,
+    wifiPassword,
+    wifiSecurity,
+    wifiHidden,
+    filenamePattern,
+    showQrMarginWarn,
+    showLinearMarginWarn,
     canDownload,
     batchLines,
     canBatchZipFn,
     downloadFile,
     copyOutput,
+    copyDataUrl,
+    fillCurrentTabUrl,
+    resetFields,
     downloadBatchZip,
     pickRecent,
     clearRecent,

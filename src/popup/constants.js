@@ -13,7 +13,26 @@ export const STORAGE = {
   theme: 'barcodeGenTheme',
   recent: 'barcodeRecent',
   batch: 'barcodeBatchText',
+  payloadMode: 'barcodePayloadMode',
+  wifiSsid: 'barcodeWifiSsid',
+  wifiPassword: 'barcodeWifiPassword',
+  wifiSecurity: 'barcodeWifiSecurity',
+  wifiHidden: 'barcodeWifiHidden',
+  linearShowText: 'barcodeLinearShowText',
+  filenamePattern: 'barcodeFilenamePattern',
 }
+
+export const FILENAME_PATTERNS = [
+  { value: 'default', label: 'Symbology + name' },
+  { value: 'dated', label: 'Symbology + date + name' },
+  { value: 'minimal', label: 'Name only' },
+]
+
+export const WIFI_SECURITY = [
+  { value: 'WPA', label: 'WPA / WPA2 / WPA3' },
+  { value: 'WEP', label: 'WEP' },
+  { value: 'nopass', label: 'Open (no password)' },
+]
 
 export const DOWNLOAD_KINDS = [
   { value: 'png', label: 'PNG', ext: 'png' },
