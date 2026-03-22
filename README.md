@@ -120,10 +120,6 @@ With text selected on a page, the context menu item **“Use selection as barcod
 
 Issues and feature requests are welcome via [GitHub Issues](https://github.com/zfhassaan/barcode-studio/issues).
 
-## License
-
-SPDX: **ISC** — see [`package.json`](./package.json). If the repo includes a `LICENSE` file (e.g. on GitHub), prefer that file when they differ.
-
 ---
 
 **Barcode Studio** — QR & linear barcodes in one click from the toolbar.
