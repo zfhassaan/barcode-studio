@@ -13,13 +13,7 @@ defineEmits(['update:theme'])
     <div class="top__row">
       <div class="top__brand">
         <div class="top__mark" aria-hidden="true">
-          <svg class="top__svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M4 6h2v12H4V6zm3 0h1v12H7V6zm2 0h3v12H9V6zm4 0h1v12h-1V6zm2 0h2v12h-2V6zm3 0h2v12h-2V6z"
-              fill="currentColor"
-              opacity="0.9"
-            />
-          </svg>
+          <img class="top__logo" src="/icons/barcode.svg" width="40" height="40" alt="" />
         </div>
         <div class="top__text">
           <h1 class="top__title">Barcode Generator</h1>
@@ -56,18 +50,18 @@ defineEmits(['update:theme'])
   width: 40px;
   height: 40px;
   border-radius: var(--bc-radius-md);
-  background: linear-gradient(135deg, var(--bc-accent-soft), var(--bc-panel));
-  border: 1px solid var(--bc-border);
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--bc-accent-text);
   box-shadow: var(--bc-shadow-sm);
 }
 
-.top__svg {
-  width: 22px;
-  height: 22px;
+.top__logo {
+  width: 40px;
+  height: 40px;
+  display: block;
+  object-fit: cover;
 }
 
 .top__text {
