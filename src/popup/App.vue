@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onUnmounted, nextTick } from 'vue'
+import { ref, watch, onUnmounted, nextTick, computed } from 'vue'
 import { useBarcodeGenerator } from './composables/useBarcodeGenerator.js'
 import {
   FORMATS,
@@ -65,6 +65,7 @@ const {
   filenamePattern,
   showQrMarginWarn,
   showLinearMarginWarn,
+  formatValidation,
   canDownload,
   canBatchZipFn,
   downloadFile,
@@ -77,25 +78,95 @@ const {
   clearRecent,
   onCsvImport,
 } = useBarcodeGenerator()
+
+const FORMAT_HELP = {
+  qrcode: {
+    what: 'QR code selected. Good for URL, text, contact, or Wi-Fi payloads.',
+    example: 'https://example.com/page',
+    rule: 'Any non-empty text is valid. Tip: use "Use tab URL" for quick QR content.',
+  },
+  CODE128: {
+    what: 'CODE128 selected. High-density general-purpose barcode.',
+    example: 'INV-2026-00421',
+    rule: 'Use printable ASCII text. Best for IDs, SKUs, and internal labels.',
+  },
+  CODE39: {
+    what: 'CODE39 selected. Legacy alphanumeric format.',
+    example: 'PART-1234-A',
+    rule: 'Allowed chars: A-Z, 0-9, space, and - . $ / + %',
+  },
+  EAN13: {
+    what: 'EAN-13 selected. Retail product barcode.',
+    example: '590123412345',
+    rule: 'Enter 12 or 13 digits.',
+  },
+  EAN8: {
+    what: 'EAN-8 selected. Compact retail barcode.',
+    example: '9638507',
+    rule: 'Enter 7 or 8 digits.',
+  },
+  UPC: {
+    what: 'UPC-A selected. Common in North America.',
+    example: '03600029145',
+    rule: 'Enter 11 or 12 digits.',
+  },
+  ITF: {
+    what: 'ITF-14 selected. Packaging and carton labels.',
+    example: '00123456789012',
+    rule: 'Digits only, and length must be even.',
+  },
+  codabar: {
+    what: 'Codabar selected. Libraries and logistics legacy format.',
+    example: 'A123456B',
+    rule: 'Use A/B/C/D as start/end with valid inner characters.',
+  },
+}
+
+const selectedFormatLabel = computed(
+  () => FORMATS.find((f) => f.value === format.value)?.label || '',
+)
+
+const selectedFormatHelp = computed(() => FORMAT_HELP[format.value] || null)
+
+const contentSectionDescription = computed(() => {
+  if (!format.value) return 'What to encode - text, URL, product ID, or Wi-Fi for QR.'
+  if (format.value === 'qrcode') return 'QR content: text, URL, contact info, or Wi-Fi payload.'
+  if (format.value === 'CODE128') return 'CODE128 content: IDs, SKUs, tracking numbers, or mixed ASCII text.'
+  if (format.value === 'CODE39') return 'CODE39 content: uppercase letters, digits, and basic symbols.'
+  if (format.value === 'EAN13') return 'EAN-13 content: product code digits (12 or 13 digits).'
+  if (format.value === 'EAN8') return 'EAN-8 content: compact retail code digits (7 or 8 digits).'
+  if (format.value === 'UPC') return 'UPC-A content: retail UPC digits (11 or 12 digits).'
+  if (format.value === 'ITF') return 'ITF content: carton/packaging digits with even length.'
+  if (format.value === 'codabar') return 'Codabar content: starts/ends with A-D for legacy labels.'
+  return 'Enter content for the selected symbology.'
+})
+
+const payloadPlaceholder = computed(() => {
+  if (!format.value) return 'Paste or type your data...'
+  return selectedFormatHelp.value?.example || 'Paste or type your data...'
+})
+
 </script>
 
 <template>
   <div class="shell" :data-theme="theme">
     <div class="shell__accent" aria-hidden="true" />
-    <AppHeader v-model:theme="theme" @open-info="infoOpen = true" />
+    <div class="shell__sticky">
+      <AppHeader v-model:theme="theme" @open-info="infoOpen = true" />
 
-    <nav class="tab-bar" role="tablist" aria-label="Sections">
-      <button id="tab-create" type="button" class="tab-bar__btn" role="tab" :aria-selected="activeTab === 'create'"
-        :tabindex="activeTab === 'create' ? 0 : -1" aria-controls="panel-create" @click="activeTab = 'create'">
-        <span class="tab-bar__label">Create</span>
-        <span class="tab-bar__hint">Format &amp; preview</span>
-      </button>
-      <button id="tab-export" type="button" class="tab-bar__btn" role="tab" :aria-selected="activeTab === 'export'"
-        :tabindex="activeTab === 'export' ? 0 : -1" aria-controls="panel-export" @click="activeTab = 'export'">
-        <span class="tab-bar__label">Export</span>
-        <span class="tab-bar__hint">Save &amp; batch</span>
-      </button>
-    </nav>
+      <nav class="tab-bar" role="tablist" aria-label="Sections">
+        <button id="tab-create" type="button" class="tab-bar__btn" role="tab" :aria-selected="activeTab === 'create'"
+          :tabindex="activeTab === 'create' ? 0 : -1" aria-controls="panel-create" @click="activeTab = 'create'">
+          <span class="tab-bar__label">Create</span>
+          <span class="tab-bar__hint">Format &amp; preview</span>
+        </button>
+        <button id="tab-export" type="button" class="tab-bar__btn" role="tab" :aria-selected="activeTab === 'export'"
+          :tabindex="activeTab === 'export' ? 0 : -1" aria-controls="panel-export" @click="activeTab = 'export'">
+          <span class="tab-bar__label">Export</span>
+          <span class="tab-bar__hint">Save &amp; batch</span>
+        </button>
+      </nav>
+    </div>
 
     <main class="shell__main">
       <div v-show="activeTab === 'create'" id="panel-create" class="tab-panel" role="tabpanel"
@@ -108,10 +179,26 @@ const {
               <option v-for="f in FORMATS" :key="f.value" :value="f.value">{{ f.label }}</option>
             </select>
           </div>
+          <div v-if="format" class="format-preview">
+            <p class="format-preview__line">
+              <span class="format-preview__chip">Selected</span>
+              <strong>{{ selectedFormatLabel }}</strong>
+            </p>
+            <p class="format-preview__text">{{ selectedFormatHelp?.what }}</p>
+            <p class="format-preview__text format-preview__text--sub">
+              Rule: {{ selectedFormatHelp?.rule }}
+            </p>
+            <p class="format-preview__text format-preview__text--sub">
+              Example: <code class="code">{{ selectedFormatHelp?.example }}</code>
+            </p>
+            <p class="format-preview__status" :class="formatValidation.ok ? 'is-ok' : 'is-bad'">
+              {{ formatValidation.text }}
+            </p>
+          </div>
         </SectionCard>
 
-        <SectionCard title="2 · Content" description="What to encode — text, URL, product ID, or Wi‑Fi for QR.">
-          <div class="toolbar-row">
+        <SectionCard title="2 · Content" :description="contentSectionDescription">
+          <div v-if="format === 'qrcode'" class="toolbar-row">
             <button type="button" class="btn btn--ghost btn--sm" @click="fillCurrentTabUrl">
               Use tab URL
             </button>
@@ -133,7 +220,7 @@ const {
           <template v-if="format !== 'qrcode' || payloadMode === 'plain'">
             <label class="u-label" for="bc-text">Payload</label>
             <textarea id="bc-text" v-model="text" class="u-textarea" rows="3" spellcheck="false"
-              placeholder="Paste or type your data…" />
+              :placeholder="payloadPlaceholder" />
           </template>
 
           <template v-else>
@@ -364,6 +451,14 @@ const {
 </template>
 
 <style scoped>
+.shell__sticky {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bc-bg);
+  border-bottom: 1px solid var(--bc-border);
+}
+
 .tab-bar {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -757,6 +852,63 @@ const {
 
 .hint--tight {
   margin-bottom: 8px;
+}
+
+.format-preview {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--bc-border);
+  border-radius: var(--bc-radius-md);
+  background: var(--bc-panel);
+}
+
+.format-preview__line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+}
+
+.format-preview__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: var(--bc-radius-full);
+  border: 1px solid var(--bc-border);
+  background: var(--bc-elevated);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bc-muted);
+}
+
+.format-preview__text {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--bc-fg);
+}
+
+.format-preview__text--sub {
+  margin-top: 4px;
+  color: var(--bc-muted);
+}
+
+.format-preview__status {
+  margin: 8px 0 0;
+  font-size: 0.73rem;
+  font-weight: 600;
+}
+
+.format-preview__status.is-ok {
+  color: #34d399;
+}
+
+.format-preview__status.is-bad {
+  color: #f59e0b;
 }
 
 .code {

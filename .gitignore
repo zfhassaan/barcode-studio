@@ -2,3 +2,8 @@ node_modules
 dist
 .DS_Store
 *.local
+
+# Chrome Web Store verified upload — never commit private key
+keys/cws-private.pem
+keys/*.pem
+barcode-studio.crx

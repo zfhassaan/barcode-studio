@@ -1,17 +1,21 @@
 {
   "name": "barcode-generator-extension",
-  "version": "1.0.0",
+  "version": "1.2.1",
   "scripts": {
     "build": "vite build",
     "dev": "vite",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "generate:cws-key": "node scripts/cws-verified-upload.mjs generate",
+    "pubkey:cws": "node scripts/cws-verified-upload.mjs pubkey",
+    "pack:cws": "node scripts/cws-verified-upload.mjs pack",
+    "release:cws": "npm run build && npm run pack:cws"
   },
   "keywords": [
     "chrome-extension",
     "barcode",
     "qr"
   ],
-  "author": "",
+  "author": "zfhassaan",
   "license": "ISC",
   "description": "Chrome extension — QR and linear barcodes in the toolbar popup.",
   "devDependencies": {

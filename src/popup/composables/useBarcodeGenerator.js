@@ -58,6 +58,9 @@ export function useBarcodeGenerator() {
   const showLinearMarginWarn = computed(
     () => !!format.value && format.value !== 'qrcode' && linearMargin.value < 6,
   )
+  const formatValidation = computed(() =>
+    validatePayloadForFormat(format.value, text.value.trim()),
+  )
 
   let debounceTimer = null
 
@@ -228,7 +231,44 @@ export function useBarcodeGenerator() {
     })
   }
 
-  const canDownload = () => !!format.value && !!text.value.trim() && !error.value
+  function validatePayloadForFormat(fmt, value) {
+    const v = String(value || '').trim()
+    if (!fmt) return { ok: false, text: 'Choose a symbology to start.' }
+    if (!v) return { ok: false, text: 'Enter content to generate a preview.' }
+
+    if (fmt === 'qrcode') return { ok: true, text: 'Valid QR payload.' }
+    if (fmt === 'CODE128') {
+      const ok = /^[\x20-\x7E]+$/.test(v)
+      return { ok, text: ok ? 'Valid CODE128 payload.' : 'Use printable ASCII characters only.' }
+    }
+    if (fmt === 'CODE39') {
+      const ok = /^[0-9A-Z\-\. $\/+%]+$/.test(v)
+      return { ok, text: ok ? 'Valid CODE39 payload.' : 'Use A-Z, 0-9, space, and - . $ / + % only.' }
+    }
+    if (fmt === 'EAN13') {
+      const ok = /^\d{12,13}$/.test(v)
+      return { ok, text: ok ? 'Valid EAN-13 payload.' : 'EAN-13 requires 12 or 13 digits.' }
+    }
+    if (fmt === 'EAN8') {
+      const ok = /^\d{7,8}$/.test(v)
+      return { ok, text: ok ? 'Valid EAN-8 payload.' : 'EAN-8 requires 7 or 8 digits.' }
+    }
+    if (fmt === 'UPC') {
+      const ok = /^\d{11,12}$/.test(v)
+      return { ok, text: ok ? 'Valid UPC-A payload.' : 'UPC-A requires 11 or 12 digits.' }
+    }
+    if (fmt === 'ITF') {
+      const ok = /^\d+$/.test(v) && v.length % 2 === 0
+      return { ok, text: ok ? 'Valid ITF payload.' : 'ITF requires an even number of digits.' }
+    }
+    if (fmt === 'codabar') {
+      const ok = /^[ABCD][0-9\-\$:\/\.\+]+[ABCD]$/.test(v)
+      return { ok, text: ok ? 'Valid Codabar payload.' : 'Codabar should start/end with A-D (for example A123B).' }
+    }
+    return { ok: true, text: 'Payload ready.' }
+  }
+
+  const canDownload = () => formatValidation.value.ok && !error.value
 
   const batchLines = computed(() =>
     batchText.value.split(/\r?\n/).map((l) => l.trim()).filter(Boolean),
@@ -599,6 +639,7 @@ export function useBarcodeGenerator() {
     filenamePattern,
     showQrMarginWarn,
     showLinearMarginWarn,
+    formatValidation,
     canDownload,
     batchLines,
     canBatchZipFn,

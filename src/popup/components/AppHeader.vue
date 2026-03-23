@@ -113,9 +113,9 @@ defineEmits(['update:theme', 'open-info'])
   width: 40px;
   height: 40px;
   padding: 0;
-  border: 1px solid var(--bc-border);
+  border: 0px solid var(--bc-border);
   border-radius: var(--bc-radius-md);
-  background: var(--bc-elevated);
+  background: transparent;
   color: var(--bc-muted);
   cursor: pointer;
   transition:
