@@ -16,6 +16,7 @@ import SectionCard from './components/SectionCard.vue'
 const activeTab = ref('create')
 const infoOpen = ref(false)
 const infoCloseRef = ref(null)
+const extensionVersion = chrome?.runtime?.getManifest?.().version || ''
 
 function closeInfo() {
   infoOpen.value = false
@@ -152,7 +153,7 @@ const payloadPlaceholder = computed(() => {
   <div class="shell" :data-theme="theme">
     <div class="shell__accent" aria-hidden="true" />
     <div class="shell__sticky">
-      <AppHeader v-model:theme="theme" @open-info="infoOpen = true" />
+      <AppHeader v-model:theme="theme" :version="extensionVersion" @open-info="infoOpen = true" />
 
       <nav class="tab-bar" role="tablist" aria-label="Sections">
         <button id="tab-create" type="button" class="tab-bar__btn" role="tab" :aria-selected="activeTab === 'create'"

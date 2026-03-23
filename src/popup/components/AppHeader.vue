@@ -3,6 +3,7 @@ import ThemeToggle from './ThemeToggle.vue'
 
 defineProps({
   theme: { type: String, required: true },
+  version: { type: String, default: '' },
 })
 
 defineEmits(['update:theme', 'open-info'])
@@ -16,7 +17,10 @@ defineEmits(['update:theme', 'open-info'])
           <img class="top__logo" src="/icons/barcode.svg" width="40" height="40" alt="" />
         </div>
         <div class="top__text">
-          <h1 class="top__title">Barcode Studio</h1>
+          <h1 class="top__title">
+            Barcode Studio
+            <span v-if="version" class="top__version">v{{ version }}</span>
+          </h1>
           <p class="top__tag">Symbology · Export · Batch</p>
         </div>
       </div>
@@ -80,11 +84,28 @@ defineEmits(['update:theme', 'open-info'])
 
 .top__title {
   margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.2;
   color: var(--bc-fg);
+}
+
+.top__version {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border-radius: var(--bc-radius-full);
+  border: 1px solid var(--bc-border);
+  background: var(--bc-panel);
+  color: var(--bc-muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .top__tag {
