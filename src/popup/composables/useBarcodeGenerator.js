@@ -1,7 +1,7 @@
 import { ref, watch, onMounted, nextTick, computed } from 'vue'
 import JsBarcode from 'jsbarcode'
 import QRCode from 'qrcode'
-import JSZip from 'jszip'
+import { strToU8, zipSync } from 'fflate'
 import {
   STORAGE,
   SIZE_PRESETS,
@@ -12,6 +12,13 @@ import {
   formatLabel,
   sanitizeFilename,
 } from '../constants.js'
+
+function base64ToUint8(b64) {
+  const bin = atob(b64)
+  const out = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i += 1) out[i] = bin.charCodeAt(i)
+  return out
+}
 
 function escapeWifiValue(s) {
   return String(s ?? '')
@@ -442,8 +449,9 @@ export function useBarcodeGenerator() {
     const fmt = format.value
     const kind = downloadKind.value
     const px = presetPx.value
-    const zip = new JSZip()
     const canvas = document.createElement('canvas')
+    /** @type {Record<string, Uint8Array>} */
+    const files = {}
     let added = 0
 
     for (let i = 0; i < lines.length; i++) {
@@ -452,7 +460,7 @@ export function useBarcodeGenerator() {
       try {
         if (kind === 'svg') {
           const svg = await buildSvgMarkup(line, fmt)
-          zip.file(`${base}.svg`, svg)
+          files[`${base}.svg`] = strToU8(svg)
           added += 1
         } else {
           await renderBarcodeToCanvasWith(canvas, line, fmt, px)
@@ -460,7 +468,7 @@ export function useBarcodeGenerator() {
           const ext = extForRasterDataUrl(dataUrl, kind)
           const b64 = dataUrl.split(',')[1]
           if (b64) {
-            zip.file(`${base}.${ext}`, b64, { base64: true })
+            files[`${base}.${ext}`] = base64ToUint8(b64)
             added += 1
           }
         }
@@ -477,7 +485,8 @@ export function useBarcodeGenerator() {
       return
     }
 
-    const blob = await zip.generateAsync({ type: 'blob' })
+    const zipped = zipSync(files, { level: 6 })
+    const blob = new Blob([zipped], { type: 'application/zip' })
     const slug = formatLabel(fmt).replace(/\s+/g, '-')
     triggerBlobDownload(blob, `${slug}-batch.zip`)
   }

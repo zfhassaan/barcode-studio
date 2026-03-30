@@ -32,5 +32,14 @@
       },
       "description": "Queue current tab URL for the next popup open"
     }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "barcode-studio@zfhassaan",
+      "strict_min_version": "121.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
   }
 }

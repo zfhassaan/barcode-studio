@@ -5,7 +5,13 @@ import manifest from './manifest.json'
 
 export default defineConfig({
   plugins: [
-    vue(),
+    vue({
+      template: {
+        compilerOptions: {
+          hoistStatic: false,
+        },
+      },
+    }),
     crx({ manifest }),
   ],
 })
