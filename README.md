@@ -9,6 +9,10 @@
 ![Chrome](https://img.shields.io/badge/Chrome-Manifest%20V3-4285F4?logo=googlechrome&logoColor=white)
 ![Vue](https://img.shields.io/badge/Vue-3-4FC08D?logo=vuedotjs&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
+![Users](https://img.shields.io/chrome-web-store/users/lknamljgoemoejklldglbpjbbagnjbab?label=Active%20Users&color=22c55e)
+![Downloads](https://img.shields.io/chrome-web-store/d/lknamljgoemoejklldglbpjbbagnjbab?label=Downloads&color=2563eb)
+![Rating](https://img.shields.io/chrome-web-store/rating/lknamljgoemoejklldglbpjbbagnjbab?color=f59e0b)
+![Version](https://img.shields.io/chrome-web-store/v/lknamljgoemoejklldglbpjbbagnjbab?color=8b5cf6)
 
 ## What it does
 
